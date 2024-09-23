@@ -7,7 +7,8 @@
     "build": "npm run compile:wasm && bunx --bun astro check && bunx --bun astro build",
     "preview": "bunx --bun astro preview",
     "astro": "astro",
-    "compile:wasm": "emcc src/assets/factorial.c -s WASM=1 -o src/assets/factorial.js -s EXPORTED_FUNCTIONS=\"['_factorial']\" -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['ccall']\""
+    "compile:wasm": "emcc src/assets/factorial.c -s WASM=1 -o src/assets/factorial.js -s EXPORTED_FUNCTIONS=\"['_factorial']\" -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['ccall']\"",
+    "compile:triangle": "emcc src/assets/blue_triangle.c -s WASM=1 -s USE_SDL=2 -s FULL_ES2=1 -s USE_WEBGL2=1 -o src/assets/blue_triangle.js"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.3",
