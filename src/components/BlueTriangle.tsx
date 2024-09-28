@@ -4,48 +4,53 @@ const BlueTriangle = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
-    const loadWasm = async () => {
-      try {
-        // Fetch and compile the WebAssembly module directly
-        const response = await fetch('/src/assets/blue_triangle.wasm');
-        const wasmBuffer = await response.arrayBuffer();
-        const wasmModule = await WebAssembly.instantiate(wasmBuffer, {
-          env: {
-            // Any necessary imports or stubs (e.g., SDL functions, memory allocation)
-            memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }),
-            table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
-            __memory_base: 1024,
-            __table_base: 0,
-            abort: () => console.error("Abort called in WebAssembly module")
-          },
-        });
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const gl = canvas.getContext('webgl');
+      if (!gl) {
+        console.error('Unable to initialize WebGL.');
+        return;
+      }
 
-        const { instance } = wasmModule;
-        const { exports } = instance;
+      // Load WebAssembly
+      const loadWasm = async () => {
+        try {
+          const response = await fetch('/src/assets/blue_triangle.wasm');
+          const wasmBuffer = await response.arrayBuffer();
+          const wasmModule = await WebAssembly.instantiate(wasmBuffer, {
+            env: {
+              memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }),
+              table: new WebAssembly.Table({ initial: 0, element: 'anyfunc' }),
+              __memory_base: 1024,
+              __table_base: 0,
+              glCreateShader: (type: GLenum) => gl.createShader(type),
+              glShaderSource: (shader: WebGLShader, sourcePtr: number, lengthPtr: number) => {
+                const source = /* Get string from WebAssembly memory */;
+                gl.shaderSource(shader, source);
+              },
+              glCompileShader: (shader: WebGLShader) => gl.compileShader(shader),
+              // Add other WebGL functions as needed
+            },
+          });
 
-        console.log('WASM exports:', exports);
+          const { instance } = wasmModule;
+          const { exports } = instance;
 
-        // Initialize the canvas and WebGL context using the WASM functions
-        if (canvasRef.current) {
-          const canvas = canvasRef.current;
-
-          // Assuming the WebAssembly module has a method to initialize WebGL context
+          // Initialize the canvas and WebGL context
           if (exports.initWebGL) {
             (exports.initWebGL as Function)(canvas);
           }
 
           const render = exports.render as Function;
           render();
-          
 
+        } catch (error) {
+          console.error('Error loading the WebAssembly module:', error);
         }
+      };
 
-      } catch (error) {
-        console.error('Error loading the WebAssembly module:', error);
-      }
-    };
-
-    loadWasm();
+      loadWasm();
+    }
   }, []);
 
   return (
